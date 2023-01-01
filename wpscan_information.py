@@ -1,50 +1,54 @@
 import requests
 import re
 
-def get_theme_info(url):
+def get_site_info(url):
   # Envoie une requête GET à l'URL cible et récupère la page HTML
   html = requests.get(url).text
 
-  # Utilise une expression régulière pour extraire le nom du thème de la page HTML
-  name_match = re.search(r"<h1 class='theme-name'>(.*?)</h1>", html)
+  # Utilise une expression régulière pour extraire le nom du site de la page HTML
+  name_match = re.search(r"<title>(.*?)</title>", html)
   if name_match:
     name = name_match.group(1)
   else:
     name = None
 
-  # Utilise une expression régulière pour extraire la version du thème de la page HTML
-  version_match = re.search(r"<span class='theme-version'>(.*?)</span>", html)
-  if version_match:
-    version = version_match.group(1)
-  else:
-    version = None
+  # Envoie une requête GET à l'URL wp-content pour récupérer la liste des fichiers dans ce répertoire
+  content_url = url + "/wp-content"
+  content_html = requests.get(content_url).text
 
-  # Envoie une requête GET au fichier readme.txt du thème
-  readme_url = url + "/readme.txt"
-  readme = requests.get(readme_url).text
-
-  # Utilise une expression régulière pour extraire la description du thème du fichier readme.txt
-  description_match = re.search(r"== Description ==(.*?)==", readme, re.DOTALL)
-  if description_match:
-    description = description_match.group(1).strip()
+  # Utilise une expression régulière pour extraire la liste des fichiers du répertoire wp-content
+  file_list_match = re.findall(r"<a href='(.*?)'>", content_html)
+  if file_list_match:
+    file_list = file_list_match
   else:
-    description = None
+    file_list = None
+
+  # Envoie une requête GET à l'URL wp-admin pour vérifier si l'accès est autorisé
+  admin_url = url + "/wp-admin"
+  admin_html = requests.get(admin_url).text
+
+  # Utilise une expression régulière pour vérifier si l'accès à l'URL wp-admin est autorisé
+  access_match = re.search(r"<p>Access denied</p>", admin_html)
+  if access_match:
+    access = "denied"
+  else:
+    access = "allowed"
 
   return {
     "name": name,
-    "version": version,
-    "description": description
+    "wp_content_files": file_list,
+    "wp_admin_access": access
   }
 
 def main():
   # Demander à l'utilisateur de saisir l'URL cible
   target_url = input("Enter the target URL: ")
 
-  # Récupérer les informations du thème à partir de l'URL cible
-  theme_info = get_theme_info(target_url)
-  print("Name:", theme_info['name'])
-  print("Version:", theme_info['version'])
-  print("Description:", theme_info['description'])
+  # Récupérer les informations du site à partir de l'URL cible
+  site_info = get_site_info(target_url)
+  print("Site name:", site_info['name'])
+  print("Files in wp-content:", site_info['wp_content_files'])
+  print("Access to wp-admin:", site_info['wp_admin_access'])
 
 if __name__ == "__main__":
   main()
