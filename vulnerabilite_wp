@@ -1,0 +1,48 @@
+import requests
+import re
+
+# Une liste des failles de sécurité connues de WordPress
+KNOWN_VULNERABILITIES = [
+  {
+    "title": "XSS vulnerability in plugin XYZ",
+    "reference": "https://example.com/xss-vulnerability-in-plugin-xyz",
+    "fixed_in": "2.0.1"
+  },
+  {
+    "title": "SQL injection vulnerability in theme ABC",
+    "reference": "https://example.com/sql-injection-vulnerability-in-theme-abc",
+    "fixed_in": "1.2.3"
+  },
+  # ...
+]
+
+def check_vulnerability(url, plugin_name, plugin_version):
+  # Vérifie si le plugin est vulnérable en comparant sa version avec les failles connues
+  for vulnerability in KNOWN_VULNERABILITIES:
+    if vulnerability["title"] == plugin_name and plugin_version < vulnerability["fixed_in"]:
+      print("VULNERABILITY FOUND:")
+      print("  URL:", url)
+      print("  Plugin:", plugin_name)
+      print("  Version:", plugin_version)
+      print("  Reference:", vulnerability["reference"])
+      print("  Fixed in:", vulnerability["fixed_in"])
+
+def get_plugin_list(url):
+  # Envoie une requête GET à l'URL cible avec le paramètre "api"
+  # Cela permet de récupérer la liste des plugins sous forme de données JSON
+  api_url = url + "/wp-json/wp/v2/plugins"
+  data = requests.get(api_url).json()
+
+  # Vérifie si chaque plugin est vulnérable en utilisant la fonction check_vulnerability()
+  for plugin in data:
+    check_vulnerability(url, plugin['name'], plugin['version'])
+
+def main():
+  # Demander à l'utilisateur de saisir l'URL cible
+  target_url = input("Enter the target URL: ")
+
+  # Vérifie les plugins installés sur le site cible pour les failles de sécurité connues
+  get_plugin_list(target_url)
+
+if __name__ == "__main__":
+  main()
